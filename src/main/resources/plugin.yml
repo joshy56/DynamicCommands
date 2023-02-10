@@ -1,0 +1,6 @@
+name: DynamicCommands
+version: '${project.version}'
+main: me.github.joshy56.dynamiccommands.DynamicCommands
+authors: [ joshy23 ]
+description: Dispatch subcommands and aliases better
+website: https://github.com/joshy56
