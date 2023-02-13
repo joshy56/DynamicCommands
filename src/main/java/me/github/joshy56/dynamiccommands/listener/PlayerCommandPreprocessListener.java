@@ -37,13 +37,26 @@ public class PlayerCommandPreprocessListener implements Listener {
         if (args.length == 0)
             return;
 
-        args[0] = args[0].substring(args[0].indexOf("/"));
+
+        if(args[0].contains("/")) {
+            String arg = args[0].substring(1);
+            if (plugin.isDebugging())
+                plugin.getLogger().info(DEBUG_TEMPLATE + " filteredArg:" + arg);
+
+            args[0] = arg;
+        }
+
         if (Strings.isNullOrEmpty(args[0]))
             return;
+
+        if (plugin.isDebugging())
+            plugin.getLogger().info(DEBUG_TEMPLATE + " filteredArgs:" + Arrays.toString(args));
 
         if (plugin.getServer().getCommandMap().getKnownCommands().containsKey(args[0]))
             return;
 
-        plugin.commandMap().dispatch(event.getPlayer(), String.join(" ", args));
+        event.setCancelled(
+                plugin.commandMap().dispatch(event.getPlayer(), String.join(" ", args))
+        );
     }
 }

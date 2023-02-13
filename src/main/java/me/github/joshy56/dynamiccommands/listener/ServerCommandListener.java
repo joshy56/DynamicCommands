@@ -42,7 +42,8 @@ public class ServerCommandListener implements Listener {
 
         if (plugin.getServer().getCommandMap().getKnownCommands().containsKey(args[0]))
             return;
-
-        plugin.commandMap().dispatch(event.getSender(), String.join(" ", args));
+        event.setCancelled(
+                plugin.commandMap().dispatch(event.getSender(), String.join(" ", args))
+        );
     }
 }

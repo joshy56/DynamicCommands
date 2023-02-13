@@ -37,9 +37,12 @@ public class AsyncTabCompleteListener implements Listener {
         if (args.length == 0)
             return;
 
-        args[0] = args[0].substring(args[0].indexOf("/"));
+        args[0] = args[0].substring(1);
         if (Strings.isNullOrEmpty(args[0]))
             return;
+
+        if (plugin.isDebugging())
+            plugin.getLogger().info(DEBUG_TEMPLATE + " filteredArgs:" + Arrays.toString(args));
 
         if (plugin.getServer().getCommandMap().getKnownCommands().containsKey(args[0]))
             return;

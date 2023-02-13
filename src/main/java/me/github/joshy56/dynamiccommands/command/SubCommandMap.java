@@ -1,20 +1,19 @@
 package me.github.joshy56.dynamiccommands.command;
 
+import co.aikar.timings.Timing;
 import co.aikar.timings.TimingsManager;
 import com.destroystokyo.paper.event.server.ServerExceptionEvent;
 import com.destroystokyo.paper.exception.ServerCommandException;
 import com.destroystokyo.paper.exception.ServerTabCompleteException;
 import com.google.common.base.Strings;
 import me.github.joshy56.dynamiccommands.DynamicCommands;
-import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandException;
 import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.util.StringUtil;
 
 import java.util.AbstractMap;
@@ -30,6 +29,8 @@ public class SubCommandMap implements CommandMap {
     private final Map<String, Command> commands;
     private final Map<String, String> commandsAliases;
     private final DynamicCommands plugin;
+    private static final String DEBUG_TEMPLATE = SubCommandMap.class.getSimpleName();
+
 
     public SubCommandMap(Map<String, Command> commands, Map<String, String> commandsAliases, DynamicCommands plugin) {
         if(!plugin.isEnabled()) throw new IllegalStateException("Plugin isn't enabled.");
@@ -47,6 +48,15 @@ public class SubCommandMap implements CommandMap {
 
     @Override
     public boolean register(String label, String fallbackPrefix, Command command) {
+        if(plugin.isDebugging()) {
+            plugin.getLogger().info(
+                    DEBUG_TEMPLATE + "#register(String:label, String:prefix, Command:command) label:" + label + " prefix:" + fallbackPrefix
+            );
+            plugin.getLogger().info(
+                    DEBUG_TEMPLATE + "#register(String:label, String:prefix, Command:command) command#getLabel():" + command.getLabel()
+            );
+        }
+
         if(!command.getLabel().equalsIgnoreCase(label))
             return false;
 
@@ -89,6 +99,12 @@ public class SubCommandMap implements CommandMap {
 
     @Override
     public boolean dispatch(CommandSender sender, String cmdLine) throws CommandException {
+        if(plugin.isDebugging()) {
+            plugin.getLogger().info(
+                    DEBUG_TEMPLATE + "#dispatch(CommandSender:sender, String:cmdLine) type of sender:" + ((sender instanceof Player) ? "Player" : "Console/Another") + " cmdLine:" + cmdLine
+            );
+        }
+
         String[] args = cmdLine.split(" ");
         Map.Entry<Command, String[]> track = trackCommand(args);
         if(track == null) return false;
@@ -96,11 +112,28 @@ public class SubCommandMap implements CommandMap {
         Command command = track.getKey();
         String[] subArgs = track.getValue();
 
+        if(plugin.isDebugging())
+            plugin.getLogger().info(
+                    DEBUG_TEMPLATE + "#dispatch(CommandSender:sender, String:cmdLine) command#getLabel():" + command.getLabel() + " subArgs:" + Arrays.toString(subArgs)
+            );
+
+        if(!command.testPermissionSilent(sender))
+            sender.sendMessage(
+                    ChatColor.translateAlternateColorCodes(
+                            '&', command.getPermissionMessage()
+                    )
+            );
+
         if(command.timings == null)
             command.timings = TimingsManager.getCommandTiming(plugin.getName(), command);
 
-        try {
-            return command.execute(sender, command.getLabel(), subArgs);
+        try (Timing ignored = command.timings.startTiming()){
+            if(!command.execute(sender, command.getLabel(), subArgs))
+                sender.sendMessage(
+                        ChatColor.translateAlternateColorCodes(
+                                '&', command.getUsage()
+                        )
+                );
         } catch (CommandException ok) {
             plugin.getServer().getPluginManager().callEvent(new ServerExceptionEvent(new ServerCommandException(ok, command, sender, args)));
             throw ok;
@@ -109,6 +142,8 @@ public class SubCommandMap implements CommandMap {
             plugin.getServer().getPluginManager().callEvent(new ServerExceptionEvent(new ServerCommandException(ok, command, sender, args)));
             throw new CommandException(msg, ok);
         }
+
+        return true;
     }
 
     @Override

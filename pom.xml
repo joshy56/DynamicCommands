@@ -6,7 +6,7 @@
 
     <groupId>me.github.joshy56</groupId>
     <artifactId>DynamicCommands</artifactId>
-    <version>0.0.0.0</version>
+    <version>0.0.0.8</version>
     <packaging>jar</packaging>
 
     <name>DynamicCommands</name>
